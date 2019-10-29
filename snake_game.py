@@ -4,6 +4,7 @@
 from launchpad import *
 from launchpad_game import LaunchpadGame
 from collections import deque
+from math import floor
 import enum
 
 
@@ -129,12 +130,15 @@ class SnakeGame(LaunchpadGame):
     BUT_QUIT = (8, 8)
     
     # Colors
-    COL_ARROW_UP = Y
-    COL_ARROW_DOWN = R
-    COL_GRID_DOWN = Y
+    COL_ARROW = R
+    COL_GRID = Y
     COL_QUIT = R
     COL_RESTART = G
-    COL_SNAKE = R
+    COL_SNAKE = [
+        (3, 0),
+        (2, 0),
+        (1, 0)
+    ]
     COL_DEAD_SNAKE = (3, 1)
     COL_FOOD = G
     
@@ -142,6 +146,7 @@ class SnakeGame(LaunchpadGame):
     TIM_GRID_BUTTONS = 0.06
     TIM_STARTUP = 0.5
     TIM_TUTORIAL_FLASH = 1.2
+    TIM_TUTORIAL_SNAKE = 0.11
     TIM_SNAKE_FLASH = 0.075
     TIM_SHOW_SCORE = 0.04
     tmr_snake = 0
@@ -193,10 +198,6 @@ class SnakeGame(LaunchpadGame):
         # Initial state
         self.change_state(GameState.tutorial)
         
-        # Draw arrow buttons yellow
-        for button in self.ARROW_BUTTONS.values():
-            self.lp.led_ctrl_xy(*button, *self.COL_ARROW_UP)
-
         if restart:
             # If game was restart from the show_score state, don't show the
             # directional input tutorial
@@ -222,20 +223,6 @@ class SnakeGame(LaunchpadGame):
             if button_event[2]:
                 # Directional input
                 for direction in Direction:
-                    # Arrow buttons
-                    if (x, y) == self.ARROW_BUTTONS[direction]:
-                        # Buffer direction change
-                        self.try_dir_change(direction)
-                        
-                        # Recolor button
-                        self.lp.led_ctrl_xy(x, y, *self.COL_ARROW_DOWN)
-                        
-                        # If waiting to begin play and a valid direction was
-                        # pressed, begin the game
-                        if self.state is GameState.starting:
-                            if not is_opposite_dir(direction, self.snake_dir):
-                                self.change_state(GameState.snaking)
-                    
                     # Grid buttons
                     if (x, y) in self.GRID_BUTTONS[direction]:
                         # Buffer direction change
@@ -258,13 +245,6 @@ class SnakeGame(LaunchpadGame):
                 # Quit button
                 if (x, y) == self.BUT_QUIT:
                     self.playing = False
-                
-                # Directional buttons
-                for direction in Direction:
-                    # Arrow buttons
-                    if (x, y) == self.ARROW_BUTTONS[direction]:
-                        # Set button color back to up
-                        self.lp.led_ctrl_xy(x, y, *self.COL_ARROW_UP)
         
         if self.state is GameState.show_score:
             x = button_event[0]
@@ -292,18 +272,19 @@ class SnakeGame(LaunchpadGame):
             self.change_state(GameState.dying)
             return
         
-        # Update snake head and draw
+        # Update snake head
         self.snake_body.appendleft(self.snake_loc)
         x = self.snake_loc[0]
         y = self.snake_loc[1]
         self.board[x][y] = TileType.snake
-        self.lp.led_ctrl_xy(x, y + 1, *self.COL_SNAKE)
         
-        # Update snake tail and draw
+        # Update snake tail and erase it
         if len(self.snake_body) > self.snake_len:
             tail = self.snake_body.pop()
             self.board[tail[0]][tail[1]] = TileType.empty
             self.lp.led_ctrl_xy(tail[0], tail[1] + 1, *K)
+        
+        self.draw_snake()
     
     def move_snake(self):
         """Move the snake's head and check for obstacles
@@ -323,7 +304,7 @@ class SnakeGame(LaunchpadGame):
             target_loc[0] -= 1
         elif self.snake_dir is Direction.right:
             target_loc[0] += 1
-
+        
         # Wrap around
         if target_loc[0] < 0:
             target_loc[0] = self.BOARD_WIDTH - 1
@@ -389,6 +370,18 @@ class SnakeGame(LaunchpadGame):
         if direction is not prev_dir:
             if not is_opposite_dir(direction, prev_dir):
                 self.dir_buffer.appendleft(direction)
+    
+    def draw_snake(self):
+        """Draws everything in snake body to the board"""
+        
+        for i in range(len(self.snake_body)):
+            # Launchpad led coords
+            x = self.snake_body[i][0]
+            y = self.snake_body[i][1] + 1
+            
+            # Draw color from COL_SNAKE gradient
+            color_id = floor(i / len(self.snake_body) * len(self.COL_SNAKE))
+            self.lp.led_ctrl_xy(x, y, *self.COL_SNAKE[color_id])
     
     def change_state(self, new_state):
         """Transitions the game's state to the given state
@@ -484,7 +477,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 7 times
         for i in range(7):
-            anim.append((self.update_snake, self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, self.TIM_TUTORIAL_SNAKE))
         
         # Show food and turn snake
         anim.append((self.food_loc[0], self.food_loc[1] + 1, *self.COL_FOOD,
@@ -494,7 +487,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 2 more times
         for i in range(2):
-            anim.append((self.update_snake, self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, self.TIM_TUTORIAL_SNAKE))
         
         # Switch to starting state
         anim.append((GameState.starting,
@@ -528,7 +521,7 @@ class SnakeGame(LaunchpadGame):
             # Light up in food color, then blink to snake color
             anim.append((x, y, *self.COL_FOOD,
                          self.lp.led_ctrl_xy, 0))
-            anim.append((x, y, *self.COL_SNAKE,
+            anim.append((x, y, *self.COL_SNAKE[0],
                          self.lp.led_ctrl_xy, self.TIM_SHOW_SCORE))
         
         # Play score animation on loop
@@ -543,21 +536,23 @@ class SnakeGame(LaunchpadGame):
         
         if is_on:
             for coord in self.GRID_BUTTONS[direction]:
-                self.lp.led_ctrl_xy(*coord, *self.COL_GRID_DOWN)
+                self.lp.led_ctrl_xy(*coord, *self.COL_GRID)
         else:
+            # Draw snake
+            self.draw_snake()
+            
+            # Draw everything else
             for coord in self.GRID_BUTTONS[direction]:
                 x = coord[0]
                 y = coord[1]
-                color = K
                 
-                # Get board color at this location
-                if self.board[x][y - 1] is TileType.snake:
-                    color = self.COL_SNAKE
+                # Draw food
                 if self.board[x][y - 1] is TileType.food:
-                    color = self.COL_FOOD
+                    self.lp.led_ctrl_xy(*coord, *self.COL_FOOD)
                 
-                # Draw it
-                self.lp.led_ctrl_xy(*coord, *color)
+                # Draw empty
+                if self.board[x][y - 1] is TileType.empty:
+                    self.lp.led_ctrl_xy(*coord, *K)
     
     def draw_arrow_buttons(self, direction, is_on):
         """Draws the arrow button for the selected direction on or off
@@ -568,10 +563,10 @@ class SnakeGame(LaunchpadGame):
         
         if is_on:
             self.lp.led_ctrl_xy(*self.ARROW_BUTTONS[direction],
-                                *self.COL_ARROW_DOWN)
+                                *self.COL_ARROW)
         else:
             self.lp.led_ctrl_xy(*self.ARROW_BUTTONS[direction],
-                                *self.COL_ARROW_UP)
+                                *K)
     
     def __str__(self):
         return 'SnakeGame'
