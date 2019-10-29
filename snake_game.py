@@ -196,7 +196,7 @@ class SnakeGame(LaunchpadGame):
         
         # Initial state
         self.change_state(GameState.tutorial)
-
+        
         if restart:
             # If game was restart from the show_score state, don't show the
             # directional input tutorial
@@ -303,7 +303,7 @@ class SnakeGame(LaunchpadGame):
             target_loc[0] -= 1
         elif self.snake_dir is Direction.right:
             target_loc[0] += 1
-
+        
         # Wrap around
         if target_loc[0] < 0:
             target_loc[0] = self.BOARD_WIDTH - 1
@@ -381,7 +381,7 @@ class SnakeGame(LaunchpadGame):
             # Draw color from COL_SNAKE gradient
             color_id = floor(i / len(self.snake_body) * len(self.COL_SNAKE))
             self.lp.led_ctrl_xy(x, y, *self.COL_SNAKE[color_id])
-        
+    
     def change_state(self, new_state):
         """Transitions the game's state to the given state
         
@@ -476,7 +476,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 7 times
         for i in range(7):
-            anim.append((self.update_snake, self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, 0.4 * self.SNAKE_UPDATE_DELAY))
         
         # Show food and turn snake
         anim.append((self.food_loc[0], self.food_loc[1] + 1, *self.COL_FOOD,
@@ -486,7 +486,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 2 more times
         for i in range(2):
-            anim.append((self.update_snake, self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, 0.4 * self.SNAKE_UPDATE_DELAY))
         
         # Switch to starting state
         anim.append((GameState.starting,
