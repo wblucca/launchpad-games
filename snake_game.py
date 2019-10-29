@@ -4,6 +4,7 @@
 from launchpad import *
 from launchpad_game import LaunchpadGame
 from collections import deque
+from math import floor
 import enum
 
 
@@ -135,8 +136,8 @@ class SnakeGame(LaunchpadGame):
     COL_RESTART = G
     COL_SNAKE = [
         (3, 0),
-        (3, 1),
-        (3, 2)
+        (2, 0),
+        (1, 0)
     ]
     COL_DEAD_SNAKE = (3, 1)
     COL_FOOD = G
@@ -377,10 +378,10 @@ class SnakeGame(LaunchpadGame):
             x = self.snake_body[i][0]
             y = self.snake_body[i][1] + 1
             
-            # Draw
-            self.lp.led_ctrl_xy(x, y, *self.COL_SNAKE[0])
+            # Draw color from COL_SNAKE gradient
+            color_id = floor(i / len(self.snake_body) * len(self.COL_SNAKE))
+            self.lp.led_ctrl_xy(x, y, *self.COL_SNAKE[color_id])
         
-    
     def change_state(self, new_state):
         """Transitions the game's state to the given state
         
