@@ -129,9 +129,8 @@ class SnakeGame(LaunchpadGame):
     BUT_QUIT = (8, 8)
     
     # Colors
-    COL_ARROW_UP = Y
-    COL_ARROW_DOWN = R
-    COL_GRID_DOWN = Y
+    COL_ARROW = R
+    COL_GRID = Y
     COL_QUIT = R
     COL_RESTART = G
     COL_SNAKE = R
@@ -192,10 +191,6 @@ class SnakeGame(LaunchpadGame):
         
         # Initial state
         self.change_state(GameState.tutorial)
-        
-        # Draw arrow buttons yellow
-        for button in self.ARROW_BUTTONS.values():
-            self.lp.led_ctrl_xy(*button, *self.COL_ARROW_UP)
 
         if restart:
             # If game was restart from the show_score state, don't show the
@@ -222,20 +217,6 @@ class SnakeGame(LaunchpadGame):
             if button_event[2]:
                 # Directional input
                 for direction in Direction:
-                    # Arrow buttons
-                    if (x, y) == self.ARROW_BUTTONS[direction]:
-                        # Buffer direction change
-                        self.try_dir_change(direction)
-                        
-                        # Recolor button
-                        self.lp.led_ctrl_xy(x, y, *self.COL_ARROW_DOWN)
-                        
-                        # If waiting to begin play and a valid direction was
-                        # pressed, begin the game
-                        if self.state is GameState.starting:
-                            if not is_opposite_dir(direction, self.snake_dir):
-                                self.change_state(GameState.snaking)
-                    
                     # Grid buttons
                     if (x, y) in self.GRID_BUTTONS[direction]:
                         # Buffer direction change
@@ -258,13 +239,6 @@ class SnakeGame(LaunchpadGame):
                 # Quit button
                 if (x, y) == self.BUT_QUIT:
                     self.playing = False
-                
-                # Directional buttons
-                for direction in Direction:
-                    # Arrow buttons
-                    if (x, y) == self.ARROW_BUTTONS[direction]:
-                        # Set button color back to up
-                        self.lp.led_ctrl_xy(x, y, *self.COL_ARROW_UP)
         
         if self.state is GameState.show_score:
             x = button_event[0]
@@ -543,7 +517,7 @@ class SnakeGame(LaunchpadGame):
         
         if is_on:
             for coord in self.GRID_BUTTONS[direction]:
-                self.lp.led_ctrl_xy(*coord, *self.COL_GRID_DOWN)
+                self.lp.led_ctrl_xy(*coord, *self.COL_GRID)
         else:
             for coord in self.GRID_BUTTONS[direction]:
                 x = coord[0]
@@ -568,10 +542,10 @@ class SnakeGame(LaunchpadGame):
         
         if is_on:
             self.lp.led_ctrl_xy(*self.ARROW_BUTTONS[direction],
-                                *self.COL_ARROW_DOWN)
+                                *self.COL_ARROW)
         else:
             self.lp.led_ctrl_xy(*self.ARROW_BUTTONS[direction],
-                                *self.COL_ARROW_UP)
+                                *K)
     
     def __str__(self):
         return 'SnakeGame'
