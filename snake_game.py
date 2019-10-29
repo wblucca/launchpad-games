@@ -146,6 +146,7 @@ class SnakeGame(LaunchpadGame):
     TIM_GRID_BUTTONS = 0.06
     TIM_STARTUP = 0.5
     TIM_TUTORIAL_FLASH = 1.2
+    TIM_TUTORIAL_SNAKE = 0.11
     TIM_SNAKE_FLASH = 0.075
     TIM_SHOW_SCORE = 0.04
     tmr_snake = 0
@@ -476,7 +477,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 7 times
         for i in range(7):
-            anim.append((self.update_snake, 0.4 * self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, self.TIM_TUTORIAL_SNAKE))
         
         # Show food and turn snake
         anim.append((self.food_loc[0], self.food_loc[1] + 1, *self.COL_FOOD,
@@ -486,7 +487,7 @@ class SnakeGame(LaunchpadGame):
         
         # Make snake move forward 2 more times
         for i in range(2):
-            anim.append((self.update_snake, 0.4 * self.SNAKE_UPDATE_DELAY))
+            anim.append((self.update_snake, self.TIM_TUTORIAL_SNAKE))
         
         # Switch to starting state
         anim.append((GameState.starting,
